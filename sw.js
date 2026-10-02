@@ -1,5 +1,5 @@
 /* Cache only the public guide. Reference-source files and external documents are excluded. */
-const CACHE='daikin-guide-467e7f4b292f5dc3';
+const CACHE='daikin-guide-56d3e93e90ff9b16';
 const ROOT=new URL('./',self.location.href);
 const ASSETS=['./index.html','./manifest.webmanifest','./icons/guide-192.png','./icons/guide-512.png'].map(path=>new URL(path,ROOT).href);
 const GUIDE_PATHS=new Set([ROOT.pathname,new URL('./index.html',ROOT).pathname]);
