@@ -1,0 +1,21 @@
+{
+  "verified_documents": [
+    {
+      "document": "IOD-4039B",
+      "refrigerant": "R-410A",
+      "model_family": "DMVE / DFVE P1400",
+      "source_url": "https://daikincomfort.com/docs/default-source/dfve/im-iod-4039b.pdf",
+      "sha256": "f1cc16a1945538a13ae19eed8df44ef26bbd2598e8eb3f3e8ad70de76b546bf0",
+      "verified_on": "2026-10-28"
+    },
+    {
+      "document": "IOD-4054",
+      "refrigerant": "R-32",
+      "model_family": "DFVE P1300",
+      "source_url": "https://cdn.daikincloud.io/PIM/Assets/Documents/IM-IOD-4054%20FINAL%206.20.2024.pdf",
+      "sha256": "31e7a6df566d807e33b91e062f2bec073936a08c912d2284bfd4f1297331ef49",
+      "verified_on": "2026-10-28"
+    }
+  ],
+  "note": "Original manufacturer PDFs checked for applicability; external files are not included in the offline guide."
+}
