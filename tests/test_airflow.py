@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import unittest
 from playwright.sync_api import sync_playwright
@@ -5,7 +6,9 @@ ROOT=Path(__file__).resolve().parents[1]
 class AirflowTests(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
-  cls.p=sync_playwright().start();cls.b=cls.p.chromium.launch()
+  cls.p=sync_playwright().start()
+  options={'executable_path':os.environ['GUIDE_TEST_BROWSER']} if os.environ.get('GUIDE_TEST_BROWSER') else {}
+  cls.b=cls.p.chromium.launch(**options)
  @classmethod
  def tearDownClass(cls):cls.b.close();cls.p.stop()
  def setUp(self):
