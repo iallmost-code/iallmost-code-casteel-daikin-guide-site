@@ -1,10 +1,11 @@
+import os
 from pathlib import Path
 import unittest
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
 class EquipmentTests(unittest.TestCase):
  @classmethod
- def setUpClass(cls):cls.p=sync_playwright().start();cls.b=cls.p.chromium.launch()
+ def setUpClass(cls):cls.p=sync_playwright().start();cls.b=cls.p.chromium.launch(**({'executable_path':os.environ['GUIDE_TEST_BROWSER']} if os.environ.get('GUIDE_TEST_BROWSER') else {}))
  @classmethod
  def tearDownClass(cls):cls.b.close();cls.p.stop()
  def setUp(self):
