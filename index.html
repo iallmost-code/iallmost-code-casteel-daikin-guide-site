@@ -6138,7 +6138,7 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
   '</div>'+
   '<div class="q-hint" id="q-hint"></div>'+
  '</fieldset>'+
- '<div id="q-heating-measurement" class="calc-note" hidden><label class="heating-confirm"><input id="q-heating-location" type="checkbox">I confirmed the true suction measurement location in this unit’s manual, and the unit is in steady heating operation, not defrost.</label><p>DH4SE: use the true suction access port and the suction line 4–6 inches from the compressor. The large hot vapor line is not a suction-temperature measurement in heating.</p></div>'+
+ '<div id="q-heating-measurement" class="calc-note" hidden><label class="heating-confirm"><input id="q-heating-location" type="checkbox">I confirmed the true suction measurement location in this unit’s manual, and the unit is in steady heating operation, not defrost.</label><p>DH4SE / DH5SE: use the true suction access port and the suction line 4–6 inches from the compressor. The large hot vapor line is not a suction-temperature measurement in heating.</p></div>'+
  '<div class="calc-out" id="q-out" aria-live="polite"></div>'+
  '<details class="calc-more" id="q-line"><summary>Line set charge (weigh-in)</summary><div class="calc-two" id="q-line-in"></div><div class="calc-out" id="q-line-out" aria-live="polite"></div></details>'+
  '<details class="calc-more"><summary>How to take the readings (from the manuals)</summary><div class="calc-note" id="q-rules"></div></details>';
@@ -6201,18 +6201,26 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
   function heatingCheck(out,u,sh){
   var method='Heating charge cannot be judged with the cooling subcooling target. Use this unit’s heating procedure and applicable nameplate / line-set charge data; no add/remove-charge verdict is made here.';
   if(u!=='OWN'&&!/^(DH|DZ)/.test(u)){show(out,'warn','AC-only outdoor unit selected',['This outdoor model does not provide heat-pump heating. Indoor electric strip heat does not change its outdoor charging procedure. Select the correct equipment and operating mode.']);return;}
-  if(REF!=='32'||u!=='DH4SE'){show(out,'info','No verified heating target connected for this model',[method,'Cooling targets are disabled in Heating. Consult the exact manufacturer manual. Existing line-set weigh-in tables remain available below.']);return;}
-  var lines=['<strong>DH4SE heating method:</strong> charge <strong>by weight</strong>, including adjustments for line size, line length and other system components. Make final charge adjustments in the cooling cycle.','IOD-4047A p.11 lists heating superheat <strong>8 ± 1 °F</strong> at the compressor. Measure pressure at the <strong>true suction access port</strong> and pipe temperature on the suction line <strong>4–6 inches from the compressor</strong>.','The large outdoor vapor line may carry hot discharge gas in heating. Do not treat its temperature as compressor suction temperature.','<a href="https://daikincomfort.com/docs/default-source/dh4se/im-iod-4047a.pdf#page=11" target="_blank" rel="noopener">Open manufacturer heating instructions — IOD-4047A p.11</a>'];
+  if(REF!=='32'||(u!=='DH4SE'&&u!=='DH5SE')){show(out,'info','No verified heating target connected for this model',[method,'Cooling targets are disabled in Heating. Consult the exact manufacturer manual. Existing line-set weigh-in tables remain available below.']);return;}
+  var tn=parseFloat($('q-tons').value),doc,url,refs;
+  if(u==='DH4SE'){doc='IOD-4047A';url='https://daikincomfort.com/docs/default-source/dh4se/im-iod-4047a.pdf#page=11';refs=[{v:8,l:'IOD-4047A p.11 lists heating superheat'}];}
+  else{doc='IOD-4064A';url='https://daikincomfort.com/docs/default-source/dh5se/im-iod-4064a.pdf#page=11';
+   refs=tn>=5?[{v:5,l:'IOD-4064A p.11 lists heating superheat for the two-stage 5-ton (high stage)'}]:[{v:8,l:'IOD-4064A p.11 table lists heating superheat'},{v:5,l:'The running text on the same page says'}];}
+  var lines=['<strong>'+u+' heating method:</strong> charge <strong>by weight</strong>, including adjustments for line size, line length and other system components. Make final charge adjustments in the cooling cycle.'];
+  refs.forEach(function(r){lines.push(r.l+' <strong>'+r.v+' ± 1 °F</strong> at the compressor.');});
+  if(refs.length>1)lines.push('Daikin’s page prints two different heating superheat values. Both are shown; check the unit’s own manual and nameplate.');
+  lines.push('Measure pressure at the <strong>true suction access port</strong> and pipe temperature on the suction line <strong>4–6 inches from the compressor</strong>.','The large outdoor vapor line may carry hot discharge gas in heating. Do not treat its temperature as compressor suction temperature.','<a href="'+url+'" target="_blank" rel="noopener">Open manufacturer heating instructions — '+doc+' p.11</a>');
   if(!$('q-heating-location').checked){show(out,'info','Heating: confirm the true suction measurement location',lines.concat(['Confirm the measurement location before a heating-superheat comparison is displayed. The cooling liquid-side inputs are disabled.']));return;}
   if(sh===null){show(out,'info','Heating: enter true suction readings',lines.concat(['Enter true suction pressure (or its saturation temperature) and the compressor suction-line temperature.']));return;}
-  lines.unshift('Measured heating superheat: <strong>'+f1(sh)+' °F</strong>. Reference: <strong>8 ± 1 °F</strong>.');
+  var states=refs.map(function(r){return sh<r.v-1?'below reference':sh>r.v+1?'above reference':'within reference';});
+  lines.unshift('Measured heating superheat: <strong>'+f1(sh)+' °F</strong>. Reference: '+refs.map(function(r,i){return '<strong>'+r.v+' ± 1 °F</strong> ('+states[i]+')';}).join(' / ')+'.');
   lines.push('This superheat comparison does not establish the refrigerant charge. Verify measurement location, steady heating operation and system conditions. Heating charge is set by weight; final adjustments are made in cooling.');
-  var state=sh<7?'below reference':sh>9?'above reference':'within reference';
+  var state=states.every(function(x){return x===states[0];})?states[0]:'matches one printed value but not the other';
   show(out,state==='within reference'?'info':'warn','Heating superheat '+state,lines);
  }
  function syncOperation(){
   var heat=$('q-operation').value==='heat';
-  $('q-heating-measurement').hidden=!heat||REF!=='32'||$('q-unit').value!=='DH4SE';
+  $('q-heating-measurement').hidden=!heat||REF!=='32'||['DH4SE','DH5SE'].indexOf($('q-unit').value)<0;
   ['q-lp','q-ls','q-lt'].forEach(function(id){$(id).disabled=heat;});
   root.querySelector('.q-grid .q-r').textContent=heat?'True suction':'Suction';
   $('q-sp').setAttribute('aria-label',heat?'True suction pressure at compressor access port, psig':'Suction pressure, psig');
@@ -6235,6 +6243,14 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
   lines.push('Subcooling: <b>'+(sc===null?'&mdash;':f1(sc)+' &deg;F')+'</b>'+(sc===null?' (needs liquid saturation and liquid line temp)':' (liquid saturation '+f1(ls)+' minus liquid line '+f1(lt)+')'));
   lines.push('Superheat: <b>'+(sh===null?'&mdash;':f1(sh)+' &deg;F')+'</b>'+(sh===null?' (needs suction saturation and suction line temp)':' (suction line '+f1(st)+' minus suction saturation '+f1(ss)+')'));
   if(od===null){show(out,'info','Enter the outdoor temperature',lines);return;}
+  var bad=[],gas=REF==='32'?'R-32':'R-410A',hp=REF==='410'?(u==='DZ6VSA'||u==='DZ6VSAE'||u==='OWN'):u.indexOf('DH')===0,tip=hp?' If the system is in heating, set Operating mode to Heating.':'';
+  if(sc!==null&&sc<0)bad.push('Subcooling is below zero: the liquid line reads warmer than the liquid saturation. That can&rsquo;t happen with liquid in the line. Check the liquid line probe, the liquid pressure, and that the gauges are set to '+gas+'.');
+  if(sh!==null&&sh<0)bad.push('Superheat is below zero: the suction line reads colder than the suction saturation. Check the suction line probe and the suction pressure.');
+  if(lt!==null&&lt<od-3)bad.push('In cooling, the liquid line ('+f1(lt)+' &deg;F) can&rsquo;t be colder than the outdoor air ('+f1(od)+' &deg;F); the outdoor coil cools it with outdoor air. Check the probe and the outdoor temperature.'+tip);
+  if(ls!==null&&ls<od)bad.push('In cooling, the liquid saturation ('+f1(ls)+' &deg;F) can&rsquo;t be below the outdoor air ('+f1(od)+' &deg;F). Check the liquid pressure.'+tip);
+  if(sc!==null&&sc>40)bad.push('Subcooling of '+f1(sc)+' &deg;F is far beyond any subcooling target in this guide. Check the readings.');
+  if(sh!==null&&sh>70)bad.push('Superheat of '+f1(sh)+' &deg;F is not a believable suction reading. Check the probe and the port.'+(hp?' In heating the vapor line carries hot gas; set Operating mode to Heating.':''));
+  if(bad.length){show(out,'warn','Check your readings first',lines.concat(bad,['No charge verdict until the readings make sense. Do not add or remove refrigerant based on these numbers.']));return;}
   var verdict=null;
   if(REF==='410'&&u==='OWN'){
    var tsc=num($('q-tsc').value),tsh=num($('q-tsh').value),tol=num($('q-tol').value);if(tol===null)tol=1;
@@ -6351,7 +6367,7 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
  }
  function rules(){
   var r=$('q-rules'),u=$('q-unit').value;
-  if($('q-operation').value==='heat'){r.innerHTML='<strong>Heating:</strong> Cooling charge targets and liquid-side calculations are disabled. For DH4SE R-32, IOD-4047A p.11 specifies charge by weight with line-size, length and component adjustments; make final adjustments in cooling. The 8 ± 1 °F heating-superheat reference uses the true suction access port and suction-line temperature 4–6 inches from the compressor. Other platforms require their exact heating instructions; do not transfer this target. The line-set tables remain available below.';return;}
+  if($('q-operation').value==='heat'){r.innerHTML='<strong>Heating:</strong> Cooling charge targets and liquid-side calculations are disabled. For DH4SE R-32, IOD-4047A p.11 specifies charge by weight with line-size, length and component adjustments; make final adjustments in cooling. The 8 ± 1 °F heating-superheat reference uses the true suction access port and suction-line temperature 4–6 inches from the compressor. DH5SE R-32 (IOD-4064A p.11): same method; the table prints 8 ± 1 °F heating superheat, the text on the same page says 5 ± 1 °F, and the two-stage 5-ton is 5 ± 1 °F at high stage. Other platforms require their exact heating instructions; do not transfer this target. The line-set tables remain available below.';return;}
   if(REF==='410')r.innerHTML='<b>Daikin Fit R-410A (manual pp. 29 to 30):</b> run the start-up test first (E11 on first power-up), heat off. Set the thermostat to CHARGE MODE. Connect the manifold to the liquid base valve service port and put a thermometer on the liquid line at the liquid service valve. Subcooling = saturated liquid temp minus liquid line temp. Only use the target at 65 to 105 &deg;F outdoor and while the board alternates &ldquo;cha&rdquo; and the subcooling value; otherwise weigh in the charge. Low subcooling: add charge. High: remove. Not more than 8 oz to reach the target, 1 oz at a time, wait 10 minutes. Do NOT adjust the charge from suction pressure. Use dedicated PVE oil gauges and hoses.';
   else r.innerHTML='<b>R-32 inverter Fit:</b> weigh in the charge from the install manual table, then verify subcooling with the thermostat&rsquo;s CHARGE VERIFICATION TEST (65 to 105 &deg;F outdoor, while the board alternates &ldquo;cha&rdquo; and the subcool value). Do not add more than 8 oz. If heat is on, it cannot enter charging mode (code 49 / E49).<br><b>R-32 SE / SQ:</b> TXV indoor coil: charge by subcooling. Outdoor 60 &deg;F or higher. Two-stage: charge at LOW stage. Additional charge beyond 15 ft by the oz per foot table. Factory charges on these spec sheets print no unit; confirm on the nameplate.<br>The nameplate is the final authority.';
  }
