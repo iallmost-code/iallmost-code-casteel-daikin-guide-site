@@ -6129,6 +6129,7 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
   '</div>'+
  '</fieldset>'+
  '<fieldset><legend>2. Readings</legend>'+
+  '<label>Operating mode<select id="q-operation"><option value="">Choose heating or cooling…</option><option value="cool">Cooling</option><option value="heat">Heating · heat pump</option></select></label>'+
   '<label class="q-od">Outdoor temperature, &deg;F<input id="q-od" type="number" inputmode="decimal"></label>'+
   '<div class="q-grid" role="group" aria-label="Pressures and temperatures">'+
    '<div class="q-h"></div><div class="q-h">Pressure<br><small>psig</small></div><div class="q-h">Saturation<br><small>&deg;F</small></div><div class="q-h">Line temp<br><small>&deg;F</small></div>'+
@@ -6137,6 +6138,7 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
   '</div>'+
   '<div class="q-hint" id="q-hint"></div>'+
  '</fieldset>'+
+ '<div id="q-heating-measurement" class="calc-note" hidden><label class="heating-confirm"><input id="q-heating-location" type="checkbox">I confirmed the true suction measurement location in this unit’s manual, and the unit is in steady heating operation, not defrost.</label><p>DH4SE: use the true suction access port and the suction line 4–6 inches from the compressor. The large hot vapor line is not a suction-temperature measurement in heating.</p></div>'+
  '<div class="calc-out" id="q-out" aria-live="polite"></div>'+
  '<details class="calc-more" id="q-line"><summary>Line set charge (weigh-in)</summary><div class="calc-two" id="q-line-in"></div><div class="calc-out" id="q-line-out" aria-live="polite"></div></details>'+
  '<details class="calc-more"><summary>How to take the readings (from the manuals)</summary><div class="calc-note" id="q-rules"></div></details>';
@@ -6165,6 +6167,7 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
  }
  function r410tables(){var m=$('q-unit').value;var sys=m.indexOf('DX')===0?'AC':'HP',ec=m==='DZ6VSAE';return D.r410.tables.filter(function(t){return t.sys===sys&&t.ec===ec;});}
  function fillTons(){
+  $('q-heating-location').checked=false;
   var u=$('q-unit').value,list=[],old=$('q-tons').value;
   $('q-own').hidden=!(REF==='410'&&u==='OWN');
   if(REF==='410'){if(u!=='OWN'){var set={};r410tables().forEach(function(t){for(var x=t.lo;x<=t.hi+0.001;x+=0.5)set[x.toFixed(1)]=1;});list=Object.keys(set).sort(function(a,b){return a-b;}).map(function(x){return {v:x,t:x+' ton'};});}}
@@ -6195,12 +6198,37 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
  function liquidSat(){var v=num($('q-ls').value);if(v!==null)return v;if(REF==='410')return ptSat(num($('q-lp').value));var P=r32pt();return P?satIn(P.liq,num($('q-lp').value)):null;}
  function suctionSat(){var v=num($('q-ss').value);if(v!==null)return v;if(REF==='32'){var P=r32pt();return (P&&P.suc)?satIn(P.suc,num($('q-sp').value)):null;}return null;}
  function band(v,lo,hi){return v<lo-1e-9?'LOW':(v>hi+1e-9?'HIGH':'in range');}
+  function heatingCheck(out,u,sh){
+  var method='Heating charge cannot be judged with the cooling subcooling target. Use this unit’s heating procedure and applicable nameplate / line-set charge data; no add/remove-charge verdict is made here.';
+  if(u!=='OWN'&&!/^(DH|DZ)/.test(u)){show(out,'warn','AC-only outdoor unit selected',['This outdoor model does not provide heat-pump heating. Indoor electric strip heat does not change its outdoor charging procedure. Select the correct equipment and operating mode.']);return;}
+  if(REF!=='32'||u!=='DH4SE'){show(out,'info','No verified heating target connected for this model',[method,'Cooling targets are disabled in Heating. Consult the exact manufacturer manual. Existing line-set weigh-in tables remain available below.']);return;}
+  var lines=['<strong>DH4SE heating method:</strong> charge <strong>by weight</strong>, including adjustments for line size, line length and other system components. Make final charge adjustments in the cooling cycle.','IOD-4047A p.11 lists heating superheat <strong>8 ± 1 °F</strong> at the compressor. Measure pressure at the <strong>true suction access port</strong> and pipe temperature on the suction line <strong>4–6 inches from the compressor</strong>.','The large outdoor vapor line may carry hot discharge gas in heating. Do not treat its temperature as compressor suction temperature.','<a href="https://daikincomfort.com/docs/default-source/dh4se/im-iod-4047a.pdf#page=11" target="_blank" rel="noopener">Open manufacturer heating instructions — IOD-4047A p.11</a>'];
+  if(!$('q-heating-location').checked){show(out,'info','Heating: confirm the true suction measurement location',lines.concat(['Confirm the measurement location before a heating-superheat comparison is displayed. The cooling liquid-side inputs are disabled.']));return;}
+  if(sh===null){show(out,'info','Heating: enter true suction readings',lines.concat(['Enter true suction pressure (or its saturation temperature) and the compressor suction-line temperature.']));return;}
+  lines.unshift('Measured heating superheat: <strong>'+f1(sh)+' °F</strong>. Reference: <strong>8 ± 1 °F</strong>.');
+  lines.push('This superheat comparison does not establish the refrigerant charge. Verify measurement location, steady heating operation and system conditions. Heating charge is set by weight; final adjustments are made in cooling.');
+  var state=sh<7?'below reference':sh>9?'above reference':'within reference';
+  show(out,state==='within reference'?'info':'warn','Heating superheat '+state,lines);
+ }
+ function syncOperation(){
+  var heat=$('q-operation').value==='heat';
+  $('q-heating-measurement').hidden=!heat||REF!=='32'||$('q-unit').value!=='DH4SE';
+  ['q-lp','q-ls','q-lt'].forEach(function(id){$(id).disabled=heat;});
+  root.querySelector('.q-grid .q-r').textContent=heat?'True suction':'Suction';
+  $('q-sp').setAttribute('aria-label',heat?'True suction pressure at compressor access port, psig':'Suction pressure, psig');
+  $('q-st').setAttribute('aria-label',heat?'Compressor suction line temperature':'Suction line temperature');
+  if(heat)$('q-hint').innerHTML='Heating: liquid-side cooling inputs are not used. Confirm the true suction access port and suction-line temperature location in the exact manual. Saturation is calculated from the selected refrigerant table when available; a typed saturation overrides it.';
+  rules();
+ }
+
  function check(){
-  hint();
+  hint();syncOperation();
   var out=$('q-out'),u=$('q-unit').value,t=$('q-tons').value,od=num($('q-od').value);
   var ls=liquidSat(),lt=num($('q-lt').value),ss=suctionSat(),st=num($('q-st').value);
   var sc=(ls!==null&&lt!==null)?ls-lt:null,sh=(ss!==null&&st!==null)?st-ss:null;
   var any=['q-od','q-sp','q-ss','q-st','q-lp','q-ls','q-lt'].some(function(id){return $(id).value!=='';});
+  if(!$('q-operation').value){show(out,'info','Select operating mode',['Choose Heating or Cooling before comparing readings with a charging target.']);return;}
+  if($('q-operation').value==='heat'){heatingCheck(out,u,sh);return;}
   if(!any){clear(out);return;}
   if(REF==='32'&&(u==='DC7TC'||u==='DH7TC')){show(out,'warn','No charging data in this guide for the '+u,['No installation or service manual was found for the DC7TC / DH7TC. Use the manual that ships with the unit. (The DH7TC spec sheet&rsquo;s &ldquo;Design Subcooling 5-7 &deg;F&rdquo; is a rating condition, not a field charging target.)']);return;}
   var lines=[];
@@ -6323,12 +6351,15 @@ html body main#field-content.shell .calc-mode button.on{background:linear-gradie
  }
  function rules(){
   var r=$('q-rules'),u=$('q-unit').value;
+  if($('q-operation').value==='heat'){r.innerHTML='<strong>Heating:</strong> Cooling charge targets and liquid-side calculations are disabled. For DH4SE R-32, IOD-4047A p.11 specifies charge by weight with line-size, length and component adjustments; make final adjustments in cooling. The 8 ± 1 °F heating-superheat reference uses the true suction access port and suction-line temperature 4–6 inches from the compressor. Other platforms require their exact heating instructions; do not transfer this target. The line-set tables remain available below.';return;}
   if(REF==='410')r.innerHTML='<b>Daikin Fit R-410A (manual pp. 29 to 30):</b> run the start-up test first (E11 on first power-up), heat off. Set the thermostat to CHARGE MODE. Connect the manifold to the liquid base valve service port and put a thermometer on the liquid line at the liquid service valve. Subcooling = saturated liquid temp minus liquid line temp. Only use the target at 65 to 105 &deg;F outdoor and while the board alternates &ldquo;cha&rdquo; and the subcooling value; otherwise weigh in the charge. Low subcooling: add charge. High: remove. Not more than 8 oz to reach the target, 1 oz at a time, wait 10 minutes. Do NOT adjust the charge from suction pressure. Use dedicated PVE oil gauges and hoses.';
   else r.innerHTML='<b>R-32 inverter Fit:</b> weigh in the charge from the install manual table, then verify subcooling with the thermostat&rsquo;s CHARGE VERIFICATION TEST (65 to 105 &deg;F outdoor, while the board alternates &ldquo;cha&rdquo; and the subcool value). Do not add more than 8 oz. If heat is on, it cannot enter charging mode (code 49 / E49).<br><b>R-32 SE / SQ:</b> TXV indoor coil: charge by subcooling. Outdoor 60 &deg;F or higher. Two-stage: charge at LOW stage. Additional charge beyond 15 ft by the oz per foot table. Factory charges on these spec sheets print no unit; confirm on the nameplate.<br>The nameplate is the final authority.';
  }
  $('q-ref').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;REF=b.getAttribute('data-r');[].forEach.call(this.children,function(x){x.classList.toggle('on',x===b);});['q-sp','q-ss','q-st','q-lp','q-ls','q-lt'].forEach(function(id){$(id).value='';});fillUnits();});
- $('q-unit').addEventListener('change',fillTons);$('q-tons').addEventListener('change',function(){buildLine();check();});
+ $('q-unit').addEventListener('change',fillTons);$('q-tons').addEventListener('change',function(){$('q-heating-location').checked=false;buildLine();check();});
  ['q-od','q-sp','q-ss','q-st','q-lp','q-ls','q-lt','q-tsc','q-tsh','q-tol'].forEach(function(id){$(id).addEventListener('input',check);});
+ $('q-operation').addEventListener('change',function(){['q-sp','q-ss','q-st','q-lp','q-ls','q-lt'].forEach(function(id){$(id).value='';});$('q-heating-location').checked=false;check();});
+ $('q-heating-location').addEventListener('change',check);
  window.__chgcalc={ptSat:ptSat,satIn:satIn,r32pt:r32pt,r32Tab:r32Tab};
  fillUnits();
 })();
@@ -6551,4 +6582,6 @@ $('page-ahri').addEventListener('change',()=>{if($('page-ahri').checked)go('page
 $('eu-query').value='DC9VSA2410A';search();
 })();
 </script>
+
+<style id="charge-heating-style">html body main#field-content.shell #q-heating-measurement[hidden]{display:none!important}html body main#field-content.shell #q-heating-measurement .heating-confirm{display:flex!important;align-items:flex-start;gap:12px;font-size:14px!important;line-height:1.6!important}html body main#field-content.shell #q-heating-location{appearance:auto!important;width:20px!important;height:20px!important;min-height:20px!important;flex:0 0 20px;margin:4px 0!important}#q-heating-measurement p{font-size:12px;color:#bfd4e2}#q-lp:disabled,#q-ls:disabled,#q-lt:disabled{opacity:.42;cursor:not-allowed}</style>
 </body></html>
