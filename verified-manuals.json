@@ -15,6 +15,33 @@
       "source_url": "https://cdn.daikincloud.io/PIM/Assets/Documents/IM-IOD-4054%20FINAL%206.20.2024.pdf",
       "sha256": "31e7a6df566d807e33b91e062f2bec073936a08c912d2284bfd4f1297331ef49",
       "verified_on": "2026-10-28"
+    },
+    {
+      "document": "IO-4011B",
+      "refrigerant": "R-32",
+      "model_family": "AMST P1300",
+      "source_url": "https://daikincomfort.com/docs/default-source/amst/im-io-4011b.pdf",
+      "sha256": "9b56cffd4f1a0fc9d2f455236046e32c1da5bedcc88846c87ed5164d832d0adf",
+      "verified_on": "2026-11-17",
+      "verification_scope": "Table 9 p.13: AMST30 T9 repeated values and AMST60 listed tap availability"
+    },
+    {
+      "document": "3P761829-1B",
+      "refrigerant": "R-32",
+      "model_family": "DC6VSA / DC6VSS / DH6VSA / DH7VSA / DC9VSA",
+      "source_url": "https://daikincomfort.com/docs/default-source/daikin-fit-heat-pump---dh6vs/im-3p761829-1b_em23a024a_24071.pdf",
+      "sha256": "c55facd81a140c7e85278657bc27774bb2d41e0340a6f8e594ce97c92482570b",
+      "verified_on": "2026-11-17",
+      "verification_scope": "p.31 TEST vs FULL cooling targets and 2-ton below-80 F TEST note"
+    },
+    {
+      "document": "IOD-4064A",
+      "refrigerant": "R-32",
+      "model_family": "DH5SE",
+      "source_url": "https://daikincomfort.com/docs/default-source/dh5se/im-iod-4064a.pdf",
+      "sha256": "2554e03574bf91aa15ce61d8de754d36e4d2e3f6fd0d9779df769d2a9fdfe925",
+      "verified_on": "2026-11-17",
+      "verification_scope": "p.11 5-ton low-stage cooling SC6±1; heating 1.5–4 ton table/text conflict retained"
     }
   ],
   "note": "Original manufacturer PDFs checked for applicability; external files are not included in the offline guide."

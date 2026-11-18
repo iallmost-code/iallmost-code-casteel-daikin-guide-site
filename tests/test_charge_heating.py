@@ -26,7 +26,7 @@ class HeatingTests(unittest.TestCase):
  def test_cooling_still_uses_cooling_table(self):
   self.page.locator('#q-operation').select_option('cool')
   for id,v in [('q-od','65'),('q-ls','100'),('q-lt','92')]:self.page.locator('#'+id).fill(v)
-  self.assertIn('Charge looks RIGHT',self.page.locator('#q-out').inner_text())
+  self.assertIn('Subcooling within target',self.page.locator('#q-out').inner_text())
  def test_mode_change_clears_old_readings(self):
   self.page.locator('#q-operation').select_option('cool');self.page.locator('#q-lt').fill('20');self.page.locator('#q-st').fill('180');self.page.locator('#q-operation').select_option('heat');self.assertEqual(self.page.locator('#q-st').input_value(),'');self.assertEqual(self.page.locator('#q-lt').input_value(),'')
  def test_other_platform_does_not_borrow_dh4se_target(self):

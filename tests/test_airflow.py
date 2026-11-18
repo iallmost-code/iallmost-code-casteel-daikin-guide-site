@@ -66,6 +66,7 @@ class AirflowTests(unittest.TestCase):
      if manual=='2035':
       index=models.index(model)+92;col=pressure if pressure<=4 else 5+(pressure-5)*2
       expected=self.page.locator('#reference-'+str(index)+' tbody tr').evaluate_all('(rs,col)=>rs.map(r=>r.cells[col].textContent.trim()+" CFM")',col)
+      expected=[x if x.removesuffix(' CFM').replace('.','',1).removesuffix('*').isdigit() else 'Not available' for x in expected]
       self.assertEqual(actual,expected)
   self.page.locator('#ag-mode').select_option('heat')
   self.assertTrue(self.page.locator('#ag-comparison').is_hidden())
